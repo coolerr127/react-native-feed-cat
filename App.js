@@ -10,7 +10,29 @@ function Main() {
 	const [score, setScore] = useState(0)
 
 	useEffect(() => {
-		// AsyncStorage.setItem('@score', `${score}`)
+		let fethScore = setTimeout(() => {
+			const data = {
+				score: [
+					{
+						date: 1,
+						score: score,
+					},
+				],
+			}
+
+			fetch(
+				'https://my-json-server.typicode.com/coolerr127/react-native-feed-cat/db',
+				{
+					method: 'PATCH',
+					headers: {
+						'Content-Type': 'application/json;charset=utf-8',
+					},
+					body: JSON.stringify(data),
+				}
+			)
+			console.log('POST', JSON.stringify(data))
+		}, 2000)
+		return () => clearTimeout(fethScore)
 	}, [score])
 
 	return (
@@ -25,13 +47,36 @@ function Main() {
 }
 
 function Results() {
-	let score = 0
+	const [score, setScore] = useState([])
+
+	function getScore() {
+		fetch(
+			'https://my-json-server.typicode.com/coolerr127/react-native-feed-cat/score'
+		)
+			.then(response => {
+				return response.json()
+			})
+			.then(data => {
+				setScore(data)
+				console.log('GET', JSON.stringify(data))
+			})
+	}
 
 	return (
 		<View
 			style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
 		>
-			<Text>{score}</Text>
+			{score
+				? score.map(item => {
+						return (
+							<Text key={item.date}>
+								{item.date + ' : '}
+								{item.score}
+							</Text>
+						)
+				  })
+				: null}
+			<Button title='Reload' onPress={() => getScore()} />
 		</View>
 	)
 }
