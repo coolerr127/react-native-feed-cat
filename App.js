@@ -5,78 +5,94 @@ import { NavigationContainer } from '@react-navigation/native'
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { Fontisto } from '@expo/vector-icons'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 function Main() {
-	const [score, setScore] = useState(0)
+	const [count, setCount] = useState(0)
+	const [cat, setCat] = useState(true)
 
-	useEffect(() => {
-		let fethScore = setTimeout(() => {
-			const data = {
-				score: [
-					{
-						date: 1,
-						score: score,
-					},
-				],
-			}
+	async function increaseCount() {
+		setCount(count + 1)
+		if ((count + 1) % 10) {
+			setCat(true)
+		} else {
+			setCat(false)
+		}
+		const date = new Date()
+		const d = date.getDay() + 1
+		const m = date.getMonth() + 1
+		const y = date.getFullYear()
+		const h = date.getHours()
+		const mm = date.getMinutes()
+		const formatedDate = `${d}-${m}-${y} ${h}:${mm}`
 
-			fetch(
-				'https://my-json-server.typicode.com/coolerr127/react-native-feed-cat/db',
-				{
-					method: 'PATCH',
-					headers: {
-						'Content-Type': 'application/json;charset=utf-8',
-					},
-					body: JSON.stringify(data),
+		let score = {
+			date: formatedDate,
+			score: count,
+		}
+
+		let scores = JSON.parse(await AsyncStorage.getItem('score'))
+
+		// AsyncStorage.setItem('score', JSON.stringify([]))
+		// return
+
+		if (scores.length === 0) {
+			await AsyncStorage.setItem('score', JSON.stringify([score]))
+		} else {
+			let test = true
+			scores.map(item => {
+				if (item.date === score.date) {
+					item.score = count
+					AsyncStorage.setItem('score', JSON.stringify(scores))
+					test = false
+					return
 				}
-			)
-			console.log('POST', JSON.stringify(data))
-		}, 2000)
-		return () => clearTimeout(fethScore)
-	}, [score])
-
-	return (
-		<View
-			style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-		>
-			<Text>Results: {score}</Text>
-			<MaterialCommunityIcons name='cat' size={300} color='black' />
-			<Button title='Feed' onPress={() => setScore(score + 1)} />
-		</View>
-	)
-}
-
-function Results() {
-	const [score, setScore] = useState([])
-
-	function getScore() {
-		fetch(
-			'https://my-json-server.typicode.com/coolerr127/react-native-feed-cat/score'
-		)
-			.then(response => {
-				return response.json()
 			})
-			.then(data => {
-				setScore(data)
-				console.log('GET', JSON.stringify(data))
-			})
+			if (test) {
+				setCount(0)
+				scores.push(score)
+				await AsyncStorage.setItem('score', JSON.stringify(scores))
+			}
+		}
+
+		// console.log('SCORE', await AsyncStorage.getItem('score'))
 	}
 
 	return (
 		<View
 			style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
 		>
-			{score
-				? score.map(item => {
-						return (
-							<Text key={item.date}>
-								{item.date + ' : '}
-								{item.score}
-							</Text>
-						)
-				  })
-				: null}
-			<Button title='Reload' onPress={() => getScore()} />
+			<Text>Results: {count}</Text>
+			{cat ? (
+				<MaterialCommunityIcons name='cat' size={300} color='black' />
+			) : (
+				<MaterialCommunityIcons name='cat' size={300} color='red' />
+			)}
+
+			<Button title='Feed' onPress={() => increaseCount()} />
+		</View>
+	)
+}
+
+function Results() {
+	const [scoreInformation, setScoreInformation] = useState()
+
+	useEffect(() => {
+		AsyncStorage.getItem('score').then(data => {
+			setScoreInformation(JSON.parse(data))
+		}, scoreInformation)
+	})
+
+	return (
+		<View
+			style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+		>
+			{scoreInformation?.map((score, key) => (
+				<Text key={key}>
+					You scored {score.score + 1} points on Date: {score.date}
+				</Text>
+			))}
+			{/* <Button title='Reload' onPress={() => getScore()} /> */}
 		</View>
 	)
 }
@@ -89,7 +105,7 @@ function About() {
 			<Text style={{ fontWeight: 'bold', fontSize: 30 }}>
 				981063{'\n'}
 				{'\n'}Шиманович Антон Васильевич{'\n'}
-				{'\n'}ЛБ №1
+				{'\n'}ЛР №1
 			</Text>
 		</View>
 	)
